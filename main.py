@@ -4,7 +4,7 @@ from config import GEMINI_API_KEY
 
 def main():
     # for testing
-    #  VIDEO_FILE_PATH = "/Users/jzheng/Desktop/test2.mov" 
+    #  VIDEO_FILE_PATH = "path to video" 
     
     # Initialize detector
     detector = YOLODetection(
