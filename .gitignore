@@ -33,6 +33,20 @@ yarn-error.log*
 .env.test.local
 .env.production.local
 
+# Python virtual environment
+.venv/
+
+# Python cache files
+__pycache__/
+*.pyc
+
+# Sensitive configuration files
+config.json
+secrets.json
+*.pem
+*.key
+*.crt
+
 # Dependencies
 node_modules/
 bower_components/
