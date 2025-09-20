@@ -179,6 +179,8 @@ class YOLODetection:
             2. DETECTED ACTIVITIES: Brief description of what you observed (bullet points)
             3. CONFIDENCE: Your confidence level in the assessment (1-10)
 
+            If the alert level is MEDIUM or higher, add 🚨 at the start and end of line 1 
+
             """
             
             # Generate analysis

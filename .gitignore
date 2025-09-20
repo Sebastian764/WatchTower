@@ -51,3 +51,5 @@ __pycache__/
 # YOLO large files
 yolov4.weights
 yolov4.cfg
+
+# config.py (Gemini API key)
