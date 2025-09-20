@@ -1,0 +1,5 @@
+{
+  "name": "AI Security Camera Analyst",
+  "description": "An intelligent security application that analyzes CCTV footage using the Gemini API to detect and report incidents in real-time. Upload an MP4 file to begin analysis.",
+  "requestFramePermissions": []
+}
