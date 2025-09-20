@@ -41,3 +41,13 @@ bower_components/
 dist/
 build/
 out/
+
+
+# python cache files 
+__pycache__/
+*.pyc
+
+
+# YOLO large files
+yolov4.weights
+yolov4.cfg
