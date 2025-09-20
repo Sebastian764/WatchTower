@@ -53,3 +53,4 @@ yolov4.weights
 yolov4.cfg
 
 # config.py (Gemini API key)
+config.py
