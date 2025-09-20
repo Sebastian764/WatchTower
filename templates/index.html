@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Security Camera Analyst</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <script src="/static/scripts.js" defer></script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛡️ AI Security Camera Analyst</h1>
+            <p class="subtitle">Upload video footage to automatically detect and analyze security incidents</p>
+        </div>
+        
+        <div class="upload-section">
+            <form id="uploadForm" enctype="multipart/form-data">
+                <div class="upload-area" id="uploadArea">
+                    <input type="file" id="videoFile" name="video" accept="video/*" style="display: none;">
+                    <div class="upload-icon">📹</div>
+                    <div class="upload-text">Click to select video file or drag and drop here</div>
+                    <button type="button" onclick="document.getElementById('videoFile').click()">Choose File</button>
+                </div>
+                
+                <div id="fileInfo" class="file-info">
+                    <div class="file-name" id="fileName"></div>
+                    <video id="videoPreview" controls style="display: none;"></video>
+                    <button type="submit" id="analyzeBtn">🔍 Analyze Video</button>
+                </div>
+            </form>
+        </div>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <div>Analyzing video with AI... This may take a few moments.</div>
+        </div>
+        
+        <div id="results"></div>
+    </div>
+</body>
+</html>
