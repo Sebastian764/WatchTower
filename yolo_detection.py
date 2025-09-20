@@ -94,16 +94,28 @@ class YOLODetection:
 
 
 
-    def run_detection(self, source=0):
+    def run_detection(self, source=0, save_video=False):
         cap = cv2.VideoCapture(source)
 
         if not cap.isOpened():
             print(f"Error: Could not open video source {source}")
             return
-
+        
+        #video properties 
+        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        fps = int(cap.get(cv2.CAP_PROP_FPS))
+        if fps == 0:
+            fps = 30  # fallback
+            
+            
+        #setup video writer if saving video
+        if save_video:
+            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+            output_filename = f"output_{int(time.time())}.mp4"
+            out = cv2.VideoWriter(output_filename, fourcc, fps, (width, height))
         # FPS calculation
         prev_time = time.time()
-        fps = 0
 
         try:
             while True:
@@ -127,6 +139,10 @@ class YOLODetection:
                 # Show frame
                 cv2.imshow("YOLO Human Detection", result_frame)
 
+                #save frame to output video
+                if save_video:
+                    out.write(result_frame)
+
                 # Quit on 'q'
                 key = cv2.waitKey(1) & 0xFF
                 if key == ord('q'):
@@ -134,4 +150,8 @@ class YOLODetection:
 
         finally:
             cap.release()
+            if save_video:
+                out.release()
+                print(f"Output video saved to: {output_filename}")
             cv2.destroyAllWindows()
+
