@@ -14,30 +14,26 @@ app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024  # 500 MB max file size
 
-# Initialize YOLO Detector
+#  YOLO Detector
 print("Initializing YOLO Detector...")
 yolo = YOLODetection()
 print("YOLO Detector initialized.")
 
-# Create upload folder if it doesn't exist
+# Upload Folder
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-# Store analysis results in memory (in production, use Redis or database)
 analysis_cache = {}
 
-def allowed_file(filename):
-    """Checks if the uploaded file has an allowed extension."""
-    return '.' in filename and \
+def allowed_file(filename):    return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 @app.route('/')
 def index():
-    """Renders the main HTML page."""
     return render_template('index.html')
 
 @app.route('/upload', methods=['POST'])
+# upload handler
 def upload_file():
-    """Handles video upload and calls the main processing function (legacy endpoint)."""
     if 'video' not in request.files:
         return jsonify({'error': 'No video part in the request'}), 400
     file = request.files['video']
@@ -57,8 +53,8 @@ def upload_file():
         return jsonify({'error': 'Invalid file type'}), 400
 
 @app.route('/analyze_full', methods=['POST'])
+# analyze full video handler
 def analyze_full():
-    """Analyzes the full video without splitting and returns timestamps of incidents."""
     print("Received request to /analyze_full")
     
     try:
@@ -74,7 +70,7 @@ def analyze_full():
         print(f"Processing file: {file.filename}")
         
         if file and allowed_file(file.filename):
-            # Generate unique filename to avoid conflicts
+            # Generate unique filename
             import uuid
             unique_id = str(uuid.uuid4())[:8]
             original_filename = secure_filename(file.filename)
@@ -86,6 +82,7 @@ def analyze_full():
             
             # Check if file was saved successfully
             if not os.path.exists(video_path):
+                
                 print(f"Error: File not saved at {video_path}")
                 return jsonify({'error': 'Failed to save video file'}), 500
             
@@ -102,11 +99,9 @@ def analyze_full():
                 alerts = analyze_full_video(video_path)
                 print(f"Analysis complete. Found {len(alerts)} alerts")
                 
-                # Cache the results
                 analysis_cache[filename] = alerts
                 
-                # Optional: Clean up the file after analysis
-                # Commented out so you can review the uploaded files
+                # Clean up the file after analysis
                 # try:
                 #     os.remove(video_path)
                 #     print(f"Cleaned up file: {video_path}")
@@ -120,7 +115,7 @@ def analyze_full():
                 import traceback
                 traceback.print_exc()
                 
-                # Try to clean up the file if analysis failed
+        # Try to clean up the file if analysis failed
                 try:
                     if os.path.exists(video_path):
                         os.remove(video_path)
