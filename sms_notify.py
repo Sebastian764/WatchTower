@@ -86,7 +86,8 @@ def send_notification(event_message, should_notify):
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
     # Prepare SMS message (keep it concise for SMS)
-    sms_message = f"ALERT: {event_message}\nTime: {timestamp}"
+    sms_message = f"{event_message}\nTime: {timestamp}"
+
     
     print(f"📱 Sending SMS notification...")
     print(f"Message: {event_message}")

@@ -75,7 +75,7 @@ def analyze_video():
         
         prompt = """You are an expert security AI system. Analyze this video footage carefully. 
         Identify any security incidents like robberies, medical emergencies, fights, vandalism, or other suspicious activities. 
-        For each incident, provide its timestamp, a description, classify its type, and recommend an action. 
+        For each incident, provide its timestamp, a description (LIMITED TO 90 CHARACTERS OR LESS), classify its type, and recommend an action. 
         If there are no incidents, return an empty 'incidents' array. 
         Respond ONLY with a JSON object with this structure:
         {
@@ -83,7 +83,7 @@ def analyze_video():
                 {
                     "timestamp": "00:45",
                     "incidentType": "Robbery|Medical Emergency|Altercation/Fight|Vandalism|Other|None",
-                    "description": "Brief but detailed description of what you observed",
+                    "description": "Brief but detailed description of what you observed (MAX 140 CHARACTERS)",
                     "recommendedAction": "Notify Authorities|Notify Paramedics|Continue Monitoring|None"
                 }
             ]
@@ -111,6 +111,21 @@ def analyze_video():
             response_text = response_text[3:-3]
             
         result = json.loads(response_text)
+        # If incidents array is not empty, send SMS notification for each incident
+        incidents = result.get('incidents', [])
+        if incidents:
+            import subprocess
+            for incident in incidents:
+                incident_type = incident.get('incidentType', 'Unknown')
+                description = incident.get('description', '')
+                sms_message = f"Incident detected: {incident_type} - {description}"
+                # Call sms_notify.py to send SMS
+                try:
+                    subprocess.run([
+                        'python3', 'sms_notify.py', '--notify', 'true', '--message', sms_message
+                    ], check=True)
+                except Exception as sms_err:
+                    print(f"Failed to send SMS notification: {sms_err}")
         return jsonify(result)
         
     except Exception as e:
