@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """
 Simple run script for the Flask WatchTower application.
 This script loads environment variables and starts the Flask development server.

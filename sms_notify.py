@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """
 Firebase SMS Notification Program - Sends SMS via Firebase Function
 Usage: python sms_notify.py --notify true
@@ -12,12 +12,12 @@ import requests
 from datetime import datetime
 
 # Firebase Configuration
-FIREBASE_PROJECT_ID = "sms-notifs-403f7"  # Your Firebase project ID
+FIREBASE_PROJECT_ID = "sms-notifs-403f7"  #  Firebase project ID
 FIREBASE_FUNCTION_URL = f"https://us-central1-{FIREBASE_PROJECT_ID}.cloudfunctions.net/sendSMS"
 
-# Your Configuration - UPDATE THESE
-YOUR_PHONE_NUMBER = "4127734372"  # Replace with your 10-digit phone number
-CARRIER = "verizon"  # Replace with your carrier: att, tmobile, verizon, sprint
+#  Configuration 
+YOUR_PHONE_NUMBER = "2676371784"  
+CARRIER = "att"  #  att, tmobile, verizon, sprint
 
 # Email-to-SMS Gateway mappings
 SMS_GATEWAYS = {
@@ -28,14 +28,13 @@ SMS_GATEWAYS = {
 }
 
 def send_sms_via_firebase(message, phone_number, carrier):
-    """Send SMS via Firebase Function using email-to-SMS gateway"""
     
     if carrier not in SMS_GATEWAYS:
         print(f"ERROR: Unsupported carrier '{carrier}'")
         print(f"Supported carriers: {list(SMS_GATEWAYS.keys())}")
         return False
         
-    sms_email = f"{phone_number}@{SMS_GATEWAYS[carrier]}"
+    sms_email = "momreznemeri@gmail.com"
     
     payload = {
         "to": sms_email,
@@ -55,7 +54,7 @@ def send_sms_via_firebase(message, phone_number, carrier):
         )
         
         if response.status_code == 200:
-            print(f"✅ SMS sent successfully via {carrier.upper()}!")
+            print(f"SMS sent successfully via {carrier.upper()}!")
             try:
                 result = response.json()
                 print(f"Firebase response: {result}")
@@ -63,22 +62,21 @@ def send_sms_via_firebase(message, phone_number, carrier):
                 print(f"Firebase response: {response.text}")
             return True
         else:
-            print(f"❌ Failed to send SMS. Status code: {response.status_code}")
+            print(f" Failed to send SMS. Status code: {response.status_code}")
             print(f"Response: {response.text}")
             return False
             
     except requests.exceptions.ConnectionError:
-        print("❌ Connection error - check your internet connection")
+        print(" Connection error - check your internet connection")
         return False
     except requests.exceptions.Timeout:
-        print("❌ Timeout error - Firebase function took too long to respond")
+        print(" Timeout error - Firebase function took too long to respond")
         return False
     except requests.exceptions.RequestException as e:
-        print(f"❌ Error calling Firebase function: {e}")
+        print(f" Error calling Firebase function: {e}")
         return False
 
 def send_notification(event_message, should_notify):
-    """Main notification function"""
     if not should_notify:
         print("🔕 Notification flag is FALSE - no SMS sent")
         return
@@ -96,9 +94,9 @@ def send_notification(event_message, should_notify):
     success = send_sms_via_firebase(sms_message, YOUR_PHONE_NUMBER, CARRIER)
     
     if success:
-        print("🎉 Notification sent successfully!")
+        print(" Notification sent successfully!")
     else:
-        print("💥 Failed to send notification")
+        print(" Failed to send notification")
 
 def main():
     parser = argparse.ArgumentParser(description='Send SMS notifications via Firebase')
@@ -115,20 +113,20 @@ def main():
     
     # Validate configuration
     if YOUR_PHONE_NUMBER == "5551234567":
-        print("⚠️  WARNING: Please update YOUR_PHONE_NUMBER with your actual phone number")
+        print("  WARNING: Please update YOUR_PHONE_NUMBER with your actual phone number")
         print("   Edit the script and change YOUR_PHONE_NUMBER = '5551234567' to your number")
         sys.exit(1)
     
     if CARRIER not in SMS_GATEWAYS:
-        print(f"⚠️  ERROR: Unsupported carrier '{CARRIER}'")
+        print(f"  ERROR: Unsupported carrier '{CARRIER}'")
         print(f"   Supported carriers: {list(SMS_GATEWAYS.keys())}")
         print("   Edit the script and update the CARRIER variable")
         sys.exit(1)
     
-    print(f"🚀 Firebase SMS Notification System")
-    print(f"📞 Phone: {YOUR_PHONE_NUMBER}")
-    print(f"📡 Carrier: {CARRIER.upper()} ({SMS_GATEWAYS[CARRIER]})")
-    print(f"🔥 Firebase Project: {FIREBASE_PROJECT_ID}")
+    print(f" Firebase SMS Notification System")
+    print(f" Phone: {YOUR_PHONE_NUMBER}")
+    print(f" Carrier: {CARRIER.upper()} ({SMS_GATEWAYS[CARRIER]})")
+    print(f" Firebase Project: {FIREBASE_PROJECT_ID}")
     print("-" * 50)
     
     # Send notification
