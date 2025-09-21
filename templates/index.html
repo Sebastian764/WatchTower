@@ -3,42 +3,901 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WatchTower Video Stream</title>
+    <title>CCTV Security Monitor</title>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: sans-serif;
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #0f0f0f 0%, #1a1a2e 100%);
+            color: #00ff00;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Scanline effect */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                transparent 50%,
+                rgba(0, 255, 0, 0.03) 50%
+            );
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 1000;
+            animation: scanline 8s linear infinite;
+        }
+
+        @keyframes scanline {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(10px); }
+        }
+
+        .cctv-container {
+            display: flex;
+            height: 100vh;
+            background: #000;
+        }
+
+        .main-monitor {
+            flex: 1;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            background-color: #f0f0f0;
-            margin: 0;
             padding: 20px;
         }
-        h1 {
-            color: #333;
+
+        .monitor-header {
+            background: linear-gradient(90deg, #1a1a2e 0%, #16213e 100%);
+            padding: 15px 20px;
+            border: 2px solid #00ff00;
+            border-bottom: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 20px rgba(0, 255, 0, 0.2);
         }
-        .video-container {
-            border: 2px solid #ccc;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            background-color: #000;
-            width: 800px;
-            height: 600px;
+
+        .camera-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .camera-id {
+            font-size: 18px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .status-indicators {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .indicator {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+
+        .indicator-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .indicator-dot.recording {
+            background: #ff0000;
+            box-shadow: 0 0 10px #ff0000;
+        }
+
+        .indicator-dot.analyzing {
+            background: #ffaa00;
+            box-shadow: 0 0 10px #ffaa00;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .video-wrapper {
+            flex: 1;
+            position: relative;
+            background: #000;
+            border: 2px solid #00ff00;
+            overflow: hidden;
+            box-shadow: 0 0 30px rgba(0, 255, 0, 0.3);
+        }
+
+        #video-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
             display: flex;
             align-items: center;
             justify-content: center;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background: #000;
+        }
+
+        #detection-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .alert-overlay {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(90deg, 
+                rgba(255, 0, 0, 0.9) 0%, 
+                rgba(255, 50, 0, 0.9) 50%, 
+                rgba(255, 0, 0, 0.9) 100%);
+            color: white;
+            padding: 15px 40px;
+            font-size: 24px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            border: 3px solid #fff;
+            box-shadow: 0 0 30px rgba(255, 0, 0, 0.8);
+            display: none;
+            z-index: 20;
+            animation: alertFlash 0.5s infinite alternate;
+        }
+
+        @keyframes alertFlash {
+            0% { 
+                background: rgba(255, 0, 0, 0.9);
+                transform: translateX(-50%) scale(1);
+            }
+            100% { 
+                background: rgba(255, 100, 0, 0.9);
+                transform: translateX(-50%) scale(1.05);
+            }
+        }
+
+        .timestamp-overlay {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px 15px;
+            font-size: 16px;
+            border: 1px solid #00ff00;
+            z-index: 15;
+            font-family: 'Courier New', monospace;
+        }
+
+        .control-panel {
+            background: linear-gradient(90deg, #1a1a2e 0%, #16213e 100%);
+            padding: 20px;
+            border: 2px solid #00ff00;
+            border-top: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 -2px 20px rgba(0, 255, 0, 0.2);
+        }
+
+        .control-buttons {
+            display: flex;
+            gap: 15px;
+        }
+
+        .control-btn {
+            background: linear-gradient(135deg, #0f3460 0%, #16213e 100%);
+            color: #00ff00;
+            border: 2px solid #00ff00;
+            padding: 12px 25px;
+            font-size: 14px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: 'Courier New', monospace;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .control-btn:hover {
+            background: linear-gradient(135deg, #00ff00 0%, #00aa00 100%);
+            color: #000;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .control-btn:active {
+            transform: translateY(0);
+        }
+
+        .control-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .side-panel {
+            width: 350px;
+            background: #0a0a0a;
+            border-left: 2px solid #00ff00;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            background: linear-gradient(90deg, #1a1a2e 0%, #16213e 100%);
+            padding: 15px;
+            border-bottom: 2px solid #00ff00;
+            font-size: 16px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-align: center;
+        }
+
+        .event-log {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .event-item {
+            background: rgba(0, 255, 0, 0.05);
+            border: 1px solid rgba(0, 255, 0, 0.3);
+            padding: 10px;
+            margin-bottom: 10px;
+            font-size: 12px;
+            transition: all 0.3s;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .event-item.alert {
+            background: rgba(255, 0, 0, 0.1);
+            border-color: rgba(255, 0, 0, 0.5);
+            color: #ff6666;
+        }
+
+        .event-item.warning {
+            background: rgba(255, 165, 0, 0.1);
+            border-color: rgba(255, 165, 0, 0.5);
+            color: #ffaa00;
+        }
+
+        .event-time {
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .camera-queue {
+            padding: 15px;
+            border-top: 2px solid #00ff00;
+            background: #0f0f0f;
+        }
+
+        .queue-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            color: #00ff00;
+        }
+
+        .queue-item {
+            background: rgba(0, 255, 0, 0.1);
+            padding: 8px;
+            margin-bottom: 5px;
+            border: 1px solid rgba(0, 255, 0, 0.3);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .queue-item:hover {
+            background: rgba(0, 255, 0, 0.2);
+        }
+
+        .queue-item.active {
+            background: rgba(0, 255, 0, 0.3);
+            border-color: #00ff00;
+        }
+
+        .upload-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #1a1a2e 0%, #0f0f0f 100%);
+            padding: 30px;
+            border: 2px solid #00ff00;
+            z-index: 2000;
+            display: none;
+            box-shadow: 0 0 50px rgba(0, 255, 0, 0.5);
+        }
+
+        .upload-modal.active {
+            display: block;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .file-input-wrapper input[type=file] {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .file-input-label {
+            display: block;
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #0f3460 0%, #16213e 100%);
+            color: #00ff00;
+            border: 2px solid #00ff00;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .file-input-label:hover {
+            background: linear-gradient(135deg, #00ff00 0%, #00aa00 100%);
+            color: #000;
+        }
+
+        .selected-files {
+            margin-top: 15px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .selected-file {
+            background: rgba(0, 255, 0, 0.1);
+            padding: 8px;
+            margin-bottom: 5px;
+            border: 1px solid rgba(0, 255, 0, 0.3);
+            font-size: 12px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
             margin-top: 20px;
         }
-        img {
-            max-width: 100%;
-            max-height: 100%;
+
+        .modal-btn {
+            flex: 1;
+            padding: 10px;
+            background: linear-gradient(135deg, #0f3460 0%, #16213e 100%);
+            color: #00ff00;
+            border: 2px solid #00ff00;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            font-family: 'Courier New', monospace;
+        }
+
+        .modal-btn:hover {
+            background: linear-gradient(135deg, #00ff00 0%, #00aa00 100%);
+            color: #000;
+        }
+
+        .loading-spinner {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: none;
+            z-index: 25;
+        }
+
+        .loading-spinner.active {
+            display: block;
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(0, 255, 0, 0.1);
+            border-top: 4px solid #00ff00;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #0a0a0a;
+            border: 1px solid #00ff00;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #00ff00;
+            border: 1px solid #0a0a0a;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #00aa00;
         }
     </style>
 </head>
 <body>
-    <h1>Real-time Video Stream</h1>
-    <div class="video-container">
-        <img src="{{ url_for('video_feed') }}" alt="Video Stream" />
+    <div class="cctv-container">
+        <div class="main-monitor">
+            <div class="monitor-header">
+                <div class="camera-info">
+                    <span class="camera-id" id="camera-id">CAMERA 01</span>
+                    <span id="current-time"></span>
+                </div>
+                <div class="status-indicators">
+                    <div class="indicator">
+                        <span class="indicator-dot recording"></span>
+                        <span>REC</span>
+                    </div>
+                    <div class="indicator" id="analyzing-indicator" style="display: none;">
+                        <span class="indicator-dot analyzing"></span>
+                        <span>ANALYZING</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="video-wrapper">
+                <div id="video-container">
+                    <video id="video-player" muted></video>
+                    <canvas id="detection-canvas"></canvas>
+                    <div class="alert-overlay" id="alert-overlay">⚠ VIOLENCE DETECTED ⚠</div>
+                    <div class="timestamp-overlay" id="timestamp-overlay">00:00:00</div>
+                    <div class="loading-spinner" id="loading-spinner">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="control-panel">
+                <div class="control-buttons">
+                    <button class="control-btn" id="next-camera-btn">Next Camera</button>
+                    <button class="control-btn" id="add-videos-btn">Add Videos</button>
+                    <button class="control-btn" id="pause-btn">Pause</button>
+                </div>
+                <div class="camera-info">
+                    <span id="video-status">Ready</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="side-panel">
+            <div class="panel-header">Event Log</div>
+            <div class="event-log" id="event-log"></div>
+            <div class="camera-queue">
+                <div class="queue-title">Camera Queue</div>
+                <div id="queue-list"></div>
+            </div>
+        </div>
     </div>
+
+    <!-- Upload Modal -->
+    <div class="upload-modal" id="upload-modal">
+        <div class="modal-title">Add Video Feeds</div>
+        <div class="file-input-wrapper">
+            <label for="video-files" class="file-input-label">Select Video Files</label>
+            <input type="file" id="video-files" accept="video/*" multiple>
+        </div>
+        <div class="selected-files" id="selected-files"></div>
+        <div class="modal-buttons">
+            <button class="modal-btn" id="upload-confirm">Add to Queue</button>
+            <button class="modal-btn" id="upload-cancel">Cancel</button>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let videoQueue = [];
+        let currentVideoIndex = 0;
+        let analysisData = {};
+        let isProcessingFrame = false;
+        let currentAlerts = [];
+        let eventCounter = 0;
+
+        // DOM elements
+        const videoPlayer = document.getElementById('video-player');
+        const detectionCanvas = document.getElementById('detection-canvas');
+        const canvasCtx = detectionCanvas.getContext('2d');
+        const alertOverlay = document.getElementById('alert-overlay');
+        const timestampOverlay = document.getElementById('timestamp-overlay');
+        const eventLog = document.getElementById('event-log');
+        const queueList = document.getElementById('queue-list');
+        const cameraId = document.getElementById('camera-id');
+        const videoStatus = document.getElementById('video-status');
+        const analyzingIndicator = document.getElementById('analyzing-indicator');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const nextCameraBtn = document.getElementById('next-camera-btn');
+        const addVideosBtn = document.getElementById('add-videos-btn');
+        const pauseBtn = document.getElementById('pause-btn');
+        const uploadModal = document.getElementById('upload-modal');
+        const videoFiles = document.getElementById('video-files');
+        const selectedFiles = document.getElementById('selected-files');
+        const uploadConfirm = document.getElementById('upload-confirm');
+        const uploadCancel = document.getElementById('upload-cancel');
+        const currentTimeEl = document.getElementById('current-time');
+
+        // Update current time
+        setInterval(() => {
+            const now = new Date();
+            currentTimeEl.textContent = now.toLocaleTimeString('en-US', { hour12: false });
+        }, 1000);
+
+        // Initialize with demo videos or wait for upload
+        window.addEventListener('load', () => {
+            addLogEntry('System initialized', 'normal');
+            videoStatus.textContent = 'Awaiting video feed';
+        });
+
+        // Add videos button
+        addVideosBtn.addEventListener('click', () => {
+            uploadModal.classList.add('active');
+        });
+
+        // File selection
+        videoFiles.addEventListener('change', (e) => {
+            selectedFiles.innerHTML = '';
+            Array.from(e.target.files).forEach(file => {
+                const fileDiv = document.createElement('div');
+                fileDiv.className = 'selected-file';
+                fileDiv.textContent = file.name;
+                selectedFiles.appendChild(fileDiv);
+            });
+        });
+
+        // Upload confirmation
+        uploadConfirm.addEventListener('click', async () => {
+            const files = Array.from(videoFiles.files);
+            if (files.length === 0) return;
+
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const videoUrl = URL.createObjectURL(file);
+                const videoName = `CAMERA ${String(videoQueue.length + 1).padStart(2, '0')}`;
+                
+                videoQueue.push({
+                    name: videoName,
+                    url: videoUrl,
+                    file: file,
+                    analyzed: false,
+                    analysis: null
+                });
+
+                addLogEntry(`${videoName} added to queue`, 'normal');
+            }
+
+            updateQueueDisplay();
+            uploadModal.classList.remove('active');
+            videoFiles.value = '';
+            selectedFiles.innerHTML = '';
+
+            // Auto-start first video if nothing is playing
+            if (videoQueue.length === files.length && !videoPlayer.src) {
+                loadVideo(0);
+            }
+        });
+
+        // Upload cancel
+        uploadCancel.addEventListener('click', () => {
+            uploadModal.classList.remove('active');
+            videoFiles.value = '';
+            selectedFiles.innerHTML = '';
+        });
+
+        // Update queue display
+        function updateQueueDisplay() {
+            queueList.innerHTML = '';
+            videoQueue.forEach((video, index) => {
+                const queueItem = document.createElement('div');
+                queueItem.className = 'queue-item';
+                if (index === currentVideoIndex) {
+                    queueItem.classList.add('active');
+                }
+                queueItem.textContent = `${video.name} ${video.analyzed ? '✓' : '○'}`;
+                queueItem.addEventListener('click', () => loadVideo(index));
+                queueList.appendChild(queueItem);
+            });
+        }
+
+        // Load video
+        async function loadVideo(index) {
+            if (index >= videoQueue.length) {
+                index = 0; // Loop back to start
+            }
+            
+            currentVideoIndex = index;
+            const video = videoQueue[index];
+            
+            loadingSpinner.classList.add('active');
+            videoStatus.textContent = 'Loading video...';
+            
+            cameraId.textContent = video.name;
+            videoPlayer.src = video.url;
+            
+            videoPlayer.onloadeddata = () => {
+                loadingSpinner.classList.remove('active');
+                videoPlayer.play();
+                videoStatus.textContent = 'Playing';
+                addLogEntry(`${video.name} feed started`, 'normal');
+                updateQueueDisplay();
+                
+                // Start analysis if not already done
+                if (!video.analyzed) {
+                    analyzeVideo(video);
+                } else if (video.analysis) {
+                    currentAlerts = video.analysis;
+                }
+            };
+        }
+
+        // Analyze video
+        async function analyzeVideo(video) {
+            analyzingIndicator.style.display = 'flex';
+            videoStatus.textContent = 'Analyzing for threats...';
+            addLogEntry(`Analyzing ${video.name} for potential threats`, 'warning');
+
+            const formData = new FormData();
+            formData.append('video', video.file);
+            formData.append('full_video', 'true'); // Signal to backend to not split
+
+            try {
+                const response = await fetch('/analyze_full', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                if (data.alerts && data.alerts.length > 0) {
+                    video.analysis = data.alerts;
+                    video.analyzed = true;
+                    currentAlerts = data.alerts;
+                    
+                    // Log detected events
+                    data.alerts.forEach(alert => {
+                        addLogEntry(
+                            `Alert: ${alert.type} detected at ${formatTime(alert.start_time)}`,
+                            'alert'
+                        );
+                    });
+                } else {
+                    video.analyzed = true;
+                    video.analysis = [];
+                    addLogEntry(`${video.name} analysis complete - No threats detected`, 'normal');
+                }
+
+            } catch (error) {
+                console.error('Analysis error:', error);
+                addLogEntry(`Analysis failed for ${video.name}`, 'alert');
+            } finally {
+                analyzingIndicator.style.display = 'none';
+                videoStatus.textContent = 'Monitoring';
+                updateQueueDisplay();
+            }
+        }
+
+        // Format time
+        function formatTime(seconds) {
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = Math.floor(seconds % 60);
+            return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+        }
+
+        // Update timestamp overlay
+        videoPlayer.addEventListener('timeupdate', () => {
+            const currentTime = videoPlayer.currentTime;
+            timestampOverlay.textContent = formatTime(currentTime);
+            
+            // Check for alerts
+            let alertActive = false;
+            if (currentAlerts && currentAlerts.length > 0) {
+                for (const alert of currentAlerts) {
+                    if (currentTime >= alert.start_time && currentTime <= alert.end_time) {
+                        alertActive = true;
+                        if (alertOverlay.style.display === 'none') {
+                            alertOverlay.style.display = 'block';
+                            addLogEntry(`VIOLENCE DETECTED at ${formatTime(currentTime)}`, 'alert');
+                        }
+                        break;
+                    }
+                }
+            }
+            
+            if (!alertActive) {
+                alertOverlay.style.display = 'none';
+            }
+        });
+
+        // Next camera button
+        nextCameraBtn.addEventListener('click', () => {
+            if (videoQueue.length > 0) {
+                loadVideo((currentVideoIndex + 1) % videoQueue.length);
+            }
+        });
+
+        // Pause/Resume button
+        pauseBtn.addEventListener('click', () => {
+            if (videoPlayer.paused) {
+                videoPlayer.play();
+                pauseBtn.textContent = 'Pause';
+                videoStatus.textContent = 'Playing';
+            } else {
+                videoPlayer.pause();
+                pauseBtn.textContent = 'Resume';
+                videoStatus.textContent = 'Paused';
+            }
+        });
+
+        // Add log entry
+        function addLogEntry(message, type = 'normal') {
+            const entry = document.createElement('div');
+            entry.className = `event-item ${type}`;
+            const time = new Date().toLocaleTimeString('en-US', { hour12: false });
+            entry.innerHTML = `<span class="event-time">${time}</span>${message}`;
+            eventLog.insertBefore(entry, eventLog.firstChild);
+            
+            // Keep only last 50 entries
+            while (eventLog.children.length > 50) {
+                eventLog.removeChild(eventLog.lastChild);
+            }
+        }
+
+        // YOLO Detection drawing
+        function drawDetections(detections) {
+            const videoRect = videoPlayer.getBoundingClientRect();
+            const containerRect = videoPlayer.parentElement.getBoundingClientRect();
+            
+            detectionCanvas.width = containerRect.width;
+            detectionCanvas.height = containerRect.height;
+            
+            const scaleX = videoRect.width / videoPlayer.videoWidth;
+            const scaleY = videoRect.height / videoPlayer.videoHeight;
+            
+            const offsetX = (containerRect.width - videoRect.width) / 2;
+            const offsetY = (containerRect.height - videoRect.height) / 2;
+
+            canvasCtx.clearRect(0, 0, detectionCanvas.width, detectionCanvas.height);
+            canvasCtx.strokeStyle = '#00ff00';
+            canvasCtx.lineWidth = 2;
+            canvasCtx.shadowColor = '#00ff00';
+            canvasCtx.shadowBlur = 10;
+
+            detections.forEach(det => {
+                const x = det.x * scaleX + offsetX;
+                const y = det.y * scaleY + offsetY;
+                const w = det.w * scaleX;
+                const h = det.h * scaleY;
+                
+                canvasCtx.strokeRect(x, y, w, h);
+                
+                // Add "HUMAN" label
+                canvasCtx.fillStyle = 'rgba(0, 255, 0, 0.8)';
+                canvasCtx.fillRect(x, y - 20, 60, 20);
+                canvasCtx.fillStyle = '#000';
+                canvasCtx.font = 'bold 12px Courier New';
+                canvasCtx.fillText('HUMAN', x + 5, y - 5);
+            });
+        }
+
+        // Process frame for YOLO detection
+        async function processCurrentFrame() {
+            if (isProcessingFrame || videoPlayer.paused || videoPlayer.ended) return;
+            isProcessingFrame = true;
+
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = videoPlayer.videoWidth;
+            tempCanvas.height = videoPlayer.videoHeight;
+            tempCanvas.getContext('2d').drawImage(videoPlayer, 0, 0, tempCanvas.width, tempCanvas.height);
+            const imageData = tempCanvas.toDataURL('image/jpeg', 0.8);
+
+            try {
+                const response = await fetch('/process_frame', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image_data: imageData }),
+                });
+                const data = await response.json();
+                if (data.detections) {
+                    drawDetections(data.detections);
+                }
+            } catch (error) {
+                console.error('Frame processing error:', error);
+            } finally {
+                isProcessingFrame = false;
+            }
+        }
+
+        // Frame processing interval
+        let frameProcessorInterval;
+        videoPlayer.addEventListener('play', () => {
+            clearInterval(frameProcessorInterval);
+            frameProcessorInterval = setInterval(processCurrentFrame, 100);
+        });
+
+        videoPlayer.addEventListener('pause', () => {
+            clearInterval(frameProcessorInterval);
+            canvasCtx.clearRect(0, 0, detectionCanvas.width, detectionCanvas.height);
+        });
+
+        videoPlayer.addEventListener('ended', () => {
+            clearInterval(frameProcessorInterval);
+            canvasCtx.clearRect(0, 0, detectionCanvas.width, detectionCanvas.height);
+            addLogEntry(`${videoQueue[currentVideoIndex].name} feed ended`, 'normal');
+            // Auto-play next video
+            setTimeout(() => {
+                if (videoQueue.length > 1) {
+                    loadVideo((currentVideoIndex + 1) % videoQueue.length);
+                } else {
+                    videoPlayer.play(); // Replay current video
+                }
+            }, 2000);
+        });
+
+    </script>
 </body>
 </html>
